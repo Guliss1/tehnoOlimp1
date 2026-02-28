@@ -38,12 +38,22 @@ document.addEventListener('DOMContentLoaded', function() {
         compareTestBtn: document.getElementById('compareTestBtn'),
         compareResetBtn: document.getElementById('compareResetBtn'),
         compareTitle: document.getElementById('compareTitle'),
-        // Новые элементы для деталей сравнения
-        comparisonDetails: document.getElementById('comparisonDetails'),
-        compDiffValue: document.getElementById('compDiffValue'),
-        compPercentValue: document.getElementById('compPercentValue'),
-        compStrongerClass: document.getElementById('compStrongerClass'),
-        compAdvice: document.getElementById('compAdvice'),
+        compareDiff: document.getElementById('compareDiff'),
+        compareChartContainer: document.getElementById('compareChartContainer'),
+        compareChartCanvas: document.getElementById('compareChart'),
+        // Остальные элементы
+        themeToggle: document.getElementById('themeToggle'),
+        favoritesToggle: document.getElementById('favoritesToggle'),
+        loadInput: document.getElementById('loadInput'),
+        applyLoadBtn: document.getElementById('applyLoadBtn'),
+        chartCanvas: document.getElementById('strengthChart'),
+        sortSelect: document.getElementById('sortSelect'),
+        filterSelect: document.getElementById('filterSelect'),
+        stageMicro: document.getElementById('stageMicro'),
+        stageCracks: document.getElementById('stageCracks'),
+        stageFractures: document.getElementById('stageFractures'),
+        stageFailure: document.getElementById('stageFailure'),
+        // Элементы таблицы сравнения
         compClass1Title: document.getElementById('compClass1Title'),
         compClass2Title: document.getElementById('compClass2Title'),
         compStrength1: document.getElementById('compStrength1'),
@@ -58,18 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
         compFailure2: document.getElementById('compFailure2'),
         compUsage1: document.getElementById('compUsage1'),
         compUsage2: document.getElementById('compUsage2'),
-        // Остальные элементы
-        themeToggle: document.getElementById('themeToggle'),
-        favoritesToggle: document.getElementById('favoritesToggle'),
-        loadInput: document.getElementById('loadInput'),
-        applyLoadBtn: document.getElementById('applyLoadBtn'),
-        chartCanvas: document.getElementById('strengthChart'),
-        sortSelect: document.getElementById('sortSelect'),
-        filterSelect: document.getElementById('filterSelect'),
-        stageMicro: document.getElementById('stageMicro'),
-        stageCracks: document.getElementById('stageCracks'),
-        stageFractures: document.getElementById('stageFractures'),
-        stageFailure: document.getElementById('stageFailure')
+        compDiffValue: document.getElementById('compDiffValue'),
+        compPercentValue: document.getElementById('compPercentValue'),
+        compStrongerClass: document.getElementById('compStrongerClass'),
+        compAdvice: document.getElementById('compAdvice')
     };
 
     // ===== СОСТОЯНИЕ =====
@@ -81,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         favorites: JSON.parse(localStorage.getItem('concreteFavorites')) || [],
         showFavoritesOnly: false,
         chart: null,
-        compareAnimationInterval: null
+        compareChart: null
     };
 
     // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
@@ -109,8 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadFrame(progress) {
         progress = Math.min(1, Math.max(0, progress));
-        const imageData = generateDestructionFrame(progress, state.currentItem.class);
-        elements.sprite.src = imageData;
+        const imagePath = generateDestructionFrame(progress, state.currentItem.class);
+        elements.sprite.src = imagePath;
 
         const pressureStr = formatPressure(progress, state.currentItem.strength);
         elements.frameIndicator.textContent = pressureStr;
@@ -284,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return data;
     }
 
+    // ===== ОТРИСОВКА СЕТКИ =====
     function renderGrid() {
         elements.grid.innerHTML = '';
         const data = filterAndSortData();
@@ -325,6 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCompareButtonsState();
     }
 
+    // ===== ИЗБРАННОЕ =====
     function toggleFavorite(className) {
         const index = state.favorites.indexOf(className);
         if (index === -1) {
@@ -491,7 +495,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 advice = t('adviceSecond', { class2: stronger.class, percent: percentText });
             }
-            // Добавим уточнение по применению
             advice += ' ' + t('adviceFirstByUsage', {
                 class1: item1.class,
                 usage1: t('usage.' + item1.class).toLowerCase(),
@@ -598,6 +601,9 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.panel.style.display = 'block';
         elements.resultBlock.style.display = 'none';
         elements.compInfo.style.display = 'none';
+
+        // Плавная прокрутка к панели деталей (добавлено)
+        elements.panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // ===== СРАВНЕНИЕ В БЛОКЕ РЕЗУЛЬТАТА =====
@@ -635,7 +641,11 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.themeToggle.textContent = isLight ? '☀️' : '🌙';
         elements.themeToggle.title = isLight ? t('themeLight') : t('themeDark');
         updateChartTheme();
-        // Другие элементы при смене темы не требуют обновления, так как используют CSS
+        if (state.compareChart) {
+            const legendColor = isLight ? '#1a2f3a' : '#e0eef5';
+            state.compareChart.options.plugins.legend.labels.color = legendColor;
+            state.compareChart.update();
+        }
     }
 
     // ===== ОБНОВЛЕНИЕ ЯЗЫКА =====
